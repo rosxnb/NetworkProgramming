@@ -2,7 +2,8 @@
 
 #include <iostream>
 
-bool Socket::Initialize() const
+bool 
+Socket::Initialize() const
 {
 #if defined(_WIN32)
     WSADATA d;
@@ -23,7 +24,13 @@ Socket::Socket(Socket::AddrInfo&& addrHints)
         return;
     }
 
-    getaddrinfo(0, "8080", &addrHints, &m_bindAddr);
+    if( getaddrinfo(0, "8080", &addrHints, &m_bindAddr) )
+    {
+        std::cerr << "getaddrinfo() failed. Invalid address hints provided for socket creation."
+            << GetErrorNum() << "\n";
+        m_isInitialized = false;
+        return;
+    }
 
     m_sockId = socket(m_bindAddr->ai_family,
                       m_bindAddr->ai_socktype,
@@ -39,7 +46,8 @@ Socket::Socket(Socket::AddrInfo&& addrHints)
     m_isInitialized = true;
 }
 
-bool Socket::IsSucessfullInit() const
+bool 
+Socket::IsSucessfullInit() const
 {
     return m_isInitialized;
 }
@@ -49,7 +57,8 @@ Socket::~Socket()
     this->CleanUp();
 }
 
-bool Socket::IsValidSocket(SOCKET socketId)
+bool 
+Socket::IsValidSocket(SOCKET socketId)
 {
 #if defined(_WIN32)
     return socketId != INVALID_SOCKET;
@@ -58,7 +67,8 @@ bool Socket::IsValidSocket(SOCKET socketId)
 #endif
 }
 
-bool Socket::Bind() const
+bool 
+Socket::Bind() const
 {
     int retval = bind(m_sockId,
                       m_bindAddr->ai_addr,
@@ -73,7 +83,8 @@ bool Socket::Bind() const
     return true;
 }
 
-bool Socket::Listen() const
+bool 
+Socket::Listen() const
 {
     std::cout << "Listening ...\n";
     int retval = listen(m_sockId, Socket::m_queueSize);
@@ -87,7 +98,8 @@ bool Socket::Listen() const
     return true;
 }
 
-Socket::ConnectionData Socket::Accept() const
+Socket::ConnectionData 
+Socket::Accept() const
 {
     Socket::ConnectionData retdata;
     struct sockaddr_storage& clientAddr = retdata.connectionAddr;
@@ -106,7 +118,8 @@ Socket::ConnectionData Socket::Accept() const
     return retdata;
 }
 
-int Socket::GetErrorNum() const
+int 
+Socket::GetErrorNum() const
 {
 #if defined(_WIN32)
     return WSAGetLastError();
@@ -115,12 +128,14 @@ int Socket::GetErrorNum() const
 #endif
 }
 
-SOCKET Socket::GetSocketId() const
+SOCKET 
+Socket::GetSocketId() const
 {
     return m_sockId;
 }
 
-void Socket::Close(SOCKET sockId)
+void 
+Socket::Close(SOCKET sockId)
 {
 #if defined(_WIN32)
     closesocket(sockId);
@@ -129,7 +144,8 @@ void Socket::Close(SOCKET sockId)
 #endif
 }
 
-void Socket::CleanUp()
+void 
+Socket::CleanUp()
 {
     freeaddrinfo(m_bindAddr);
     Socket::Close(m_sockId);
@@ -138,7 +154,8 @@ void Socket::CleanUp()
 #endif
 }
 
-std::pair<char const*, char const*> Socket::GetConnectionInfo(Socket::ConnectionData const& connectionData, bool numeric)
+std::pair<char const*, char const*> 
+Socket::GetConnectionInfo(Socket::ConnectionData const& connectionData, bool numeric)
 {
     char addrBuffer[100];
     char serviceBuffer[100];
