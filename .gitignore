@@ -3,6 +3,9 @@
 *.out
 *.obj
 
+# folders
+.cache
+
 # cmake
 build
 targets
