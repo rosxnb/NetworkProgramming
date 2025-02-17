@@ -1,0 +1,11 @@
+# binaries
+*.exe
+*.out
+*.obj
+
+# cmake
+build
+targets
+
+# MacOS data file
+.DS_Store
