@@ -1,7 +1,5 @@
 #include "socket/socket.hpp"
 
-#include <iostream>
-
 bool 
 Socket::Initialize() const
 {
@@ -9,7 +7,7 @@ Socket::Initialize() const
     WSADATA d;
     if( WSAStartup(MAKEWORD(2, 2), &d) )
     {
-        std::cerr << "Failed to intialize WinSock.\n";
+        // Failed to initialize WinSocket
         return false;
     }
 #endif
@@ -26,8 +24,6 @@ Socket::Socket(Socket::AddrInfo&& addrHints)
 
     if( getaddrinfo(0, "8080", &addrHints, &m_bindAddr) )
     {
-        std::cerr << "getaddrinfo() failed. Invalid address hints provided for socket creation."
-            << GetErrorNum() << "\n";
         m_isInitialized = false;
         return;
     }
@@ -37,13 +33,38 @@ Socket::Socket(Socket::AddrInfo&& addrHints)
                       m_bindAddr->ai_protocol);
     if( !IsValidSocket(m_sockId) )
     {
-        std::cerr << "socket() creation failed. "
-            << GetErrorNum() << "\n";
+        m_isInitialized = false;
+        return;
+    }
+
+    // enable dual-stack socket to support IPV6 and IPV4
+    m_isDualStack = false;
+    int option = 0;
+    if( addrHints.ai_family == AF_INET6 
+        && TryDualStackConfig() )
+    {
+        m_isDualStack = true;
+    }
+
+    if( !this->Bind() )
+    {
         m_isInitialized = false;
         return;
     }
 
     m_isInitialized = true;
+}
+
+bool
+Socket::TryDualStackConfig()
+{
+#if defined(_WIN32)
+    char const option = 0;
+#else
+    void option = 0;
+#endif
+
+    return ! setsockopt(m_sockId, IPPROTO_IPV6, IPV6_V6ONLY, &option, sizeof(option));
 }
 
 bool 
@@ -67,6 +88,12 @@ Socket::IsValidSocket(SOCKET socketId)
 #endif
 }
 
+bool
+Socket::IsDualStack() const
+{
+    return m_isDualStack;
+}
+
 bool 
 Socket::Bind() const
 {
@@ -74,11 +101,7 @@ Socket::Bind() const
                       m_bindAddr->ai_addr,
                       m_bindAddr->ai_addrlen);
     if( retval )
-    {
-        std::cerr << "bind() failed. "
-            << GetErrorNum() << "\n";
         return false;
-    }
 
     return true;
 }
@@ -86,14 +109,9 @@ Socket::Bind() const
 bool 
 Socket::Listen() const
 {
-    std::cout << "Listening ...\n";
     int retval = listen(m_sockId, Socket::m_queueSize);
     if( retval < 0 )
-    {
-        std::cerr << "listen() failed."
-            << GetErrorNum() << "\n";
         return false;
-    }
 
     return true;
 }
@@ -108,11 +126,7 @@ Socket::Accept() const
     SOCKET& clientSocketId = retdata.socketId;
     clientSocketId = accept(m_sockId, (struct sockaddr*) &clientAddr, &(retdata.addrLength));
     if( !IsValidSocket(clientSocketId) )
-    {
-        std::cerr << "accept() failed to make new connection. "
-            << GetErrorNum() << "\n";
         return retdata;
-    }
 
     retdata.isValid = true;
     return retdata;
@@ -154,7 +168,7 @@ Socket::CleanUp()
 #endif
 }
 
-std::pair<char const*, char const*> 
+Socket::StringPair
 Socket::GetConnectionInfo(Socket::ConnectionData const& connectionData, bool numeric)
 {
     char addrBuffer[100];

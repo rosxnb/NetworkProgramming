@@ -5,6 +5,7 @@
 
 # folders
 .cache
+sandbox
 
 # cmake
 build

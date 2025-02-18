@@ -11,15 +11,16 @@ int main()
     std::cout << "Configuring local address ...\n";
     Socket::AddrInfo hints;
     std::memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
+    hints.ai_family = AF_INET6;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
     std::cout << "Creating socket ...\n";
     Socket socket(std::move(hints));
-    if( socket.IsSucessfullInit() && !socket.Bind() )
-        return -1;
+    std::cout << "Socket created sucessfully." << " Socket type: "
+        << (socket.IsDualStack() ? "Dual Stack" : "Single Stack") << "\n";
 
+    std::cout << "Listening for client connection ...\n";
     if( !socket.Listen() )
         return -1;
 
@@ -27,7 +28,9 @@ int main()
     if( connectionData.isValid )
     {
         std::cout << "Client is connected ...\n";
-        std::cout << " client address: " << Socket::GetConnectionInfo(connectionData).first << "\n";
+        auto [clientAddr, serviceName] = Socket::GetConnectionInfo(connectionData);
+        std::cout << " client address: " << clientAddr << "\n";
+        std::cout << " service name: " << serviceName << "\n";
     }
     else return -1;
 

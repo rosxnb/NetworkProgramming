@@ -1,9 +1,6 @@
 #pragma once
 
 #if defined(_WIN32)
-    #ifndef _WIN32_WINNT
-        #define _WIN32_WINNT 0x0600
-    #endif
     #include <winsock2.h>
     #include <ws2tcpip.h>
     #pragma comment( lib, "ws2_32.lib" )
@@ -22,11 +19,13 @@
 #endif
 
 #include <utility>
+#include <string>
 
 class Socket
 {
 public:
     using AddrInfo = struct addrinfo;
+    using StringPair = std::pair<std::string, std::string>;
 
     struct ConnectionData
     {
@@ -36,7 +35,7 @@ public:
         SOCKET socketId;
     };
 
-    static std::pair<char const*, char const*> GetConnectionInfo(Socket::ConnectionData const& connectionData, bool numeric = true);
+    static StringPair GetConnectionInfo(Socket::ConnectionData const& connectionData, bool numeric = true);
     static void Close(SOCKET sockId);
     static bool IsValidSocket(SOCKET socketId);
 
@@ -55,15 +54,18 @@ public:
     Socket::ConnectionData  Accept() const;
     int                     GetErrorNum() const;
     SOCKET                  GetSocketId() const;
+    bool                    IsDualStack() const;
     
 private:
     AddrInfo*   m_bindAddr;
     SOCKET      m_sockId;
     bool        m_isInitialized;
+    bool        m_isDualStack;
 
     static constexpr int m_queueSize = 10;
 
 private:
     bool Initialize() const;
     void CleanUp();
+    bool TryDualStackConfig();
 };
