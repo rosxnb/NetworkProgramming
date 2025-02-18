@@ -39,7 +39,6 @@ Socket::Socket(Socket::AddrInfo&& addrHints)
 
     // enable dual-stack socket to support IPV6 and IPV4
     m_isDualStack = false;
-    int option = 0;
     if( addrHints.ai_family == AF_INET6 
         && TryDualStackConfig() )
     {
@@ -61,10 +60,12 @@ Socket::TryDualStackConfig()
 #if defined(_WIN32)
     char const option = 0;
 #else
-    void option = 0;
+    int _temp = 0;
+    auto* option = reinterpret_cast<void*>(&_temp);
 #endif
 
-    return ! setsockopt(m_sockId, IPPROTO_IPV6, IPV6_V6ONLY, &option, sizeof(option));
+    int retval = setsockopt(m_sockId, IPPROTO_IPV6, IPV6_V6ONLY, &option, sizeof(option));
+    return !retval;
 }
 
 bool 

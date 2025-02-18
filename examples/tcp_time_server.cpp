@@ -20,6 +20,12 @@ int main()
     std::cout << "Socket created sucessfully." << " Socket type: "
         << (socket.IsDualStack() ? "Dual Stack" : "Single Stack") << "\n";
 
+    if( !socket.IsSucessfullInit() )
+    {
+        std::cerr << "Socket creation failed. exiting program ...\n";
+        return -1;
+    }
+
     std::cout << "Listening for client connection ...\n";
     if( !socket.Listen() )
         return -1;
